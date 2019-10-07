@@ -1,0 +1,23 @@
+{
+  "name": "es-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.elasticsearch.ElasticsearchSinkConnector",
+    "tasks.max": "1",
+    "topics": "amma.public.demo_table",
+    "connection.url": "http://elasticsearch:9200",
+    "transforms": "unwrap,key,expand",
+    "connection.username": "elastic",
+    "connection.password": "changeme",
+    "elastic.security.protocol": "PLAINTEXT",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.drop.tombstones": "false",
+    "transforms.key.type": "org.apache.kafka.connect.transforms.ExtractField$Key",
+    "transforms.key.field": "id",
+    "transforms.expand.type": "com.redhat.insights.expandjsonsmt.ExpandJSON$Value",
+    "transforms.expand.sourceFields": "array_value,object_value",
+    "key.ignore": "false",
+    "type.name": "demo_table",
+    "behavior.on.null.values": "delete",
+    "behavior.on.malformed.documents": "fail"
+  }
+}

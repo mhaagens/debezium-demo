@@ -1,0 +1,85 @@
+version: "3"
+services:
+  zookeeper:
+    image: debezium/zookeeper:0.10
+    volumes:
+      - ./data/zookeeper/data:/var/lib/zookeeper/data
+      - ./data/zookeeper/logs:/var/lib/zookeeper/log
+    ports:
+      - 2181:2181
+      - 2888:2888
+      - 3888:3888
+
+  kafka:
+    image: debezium/kafka:0.10
+    ports:
+      - 9092:9092
+    links:
+      - zookeeper
+    volumes:
+      - ./data/kafka:/var/lib/kafka/data
+    environment:
+      - ZOOKEEPER_CONNECT=zookeeper:2181
+
+  connect:
+    image: debezium/connect-jdbc-es:0.10
+    build:
+      context: ./config/debezium-connect
+    ports:
+      - 8083:8083
+      - 5005:5005
+    depends_on:
+      - kafka
+      - postgres
+      - elasticsearch
+    environment:
+      - BOOTSTRAP_SERVERS=kafka:9092
+      - GROUP_ID=1
+      - CONFIG_STORAGE_TOPIC=my_connect_configs
+      - OFFSET_STORAGE_TOPIC=my_connect_offsets
+      - STATUS_STORAGE_TOPIC=my_source_connect_statuses
+
+  postgres:
+    build:
+      context: ./config/postgres
+    restart: always
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./config/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    env_file:
+      - ../../.env
+    environment:
+      - PGDATA=/var/lib/postgresql/data
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    ports:
+      - 5432:5432
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.8.3
+    container_name: elasticsearch
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTIC_PASSWORD=changeme
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - xpack.security.enabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.8.3
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=changeme
+      - elasticsearch.ssl.verificationMode=none
+    ports:
+      - 5601:5601

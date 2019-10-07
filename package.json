@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "workspaces": [
+    "src/*"
+  ],
+  "name": "local",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "dotenv-safe": "^8.1.0",
+    "knex": "^0.19.4",
+    "pg": "^7.12.1"
+  }
+}
